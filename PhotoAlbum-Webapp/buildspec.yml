@@ -10,7 +10,7 @@ phases:
 
 artifacts:
   files:
-    - index.html
-    - app.js
-    - sdk/**  
+    - PhotoAlbum-Webapp/index.html
+    - PhotoAlbum-Webapp/app.js
+    - PhotoAlbum-Webapp/sdk/**  
   discard-paths: no

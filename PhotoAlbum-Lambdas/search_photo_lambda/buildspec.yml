@@ -4,11 +4,11 @@ phases:
     runtime-versions:
       python: 3.9
     commands:
-      - pip install -r search_photo_lambda/requirements.txt -t ./package
+      - pip install -r PhotoAlbum-Lambdas/search_photo_lambda/requirements.txt -t ./package
   build:
     commands:
-      - cp search_photo_lambda/lambda_function.py ./package/
-      - cd search_photo_lambda/package && zip -r ../search-photos.zip .
+      - cp PhotoAlbum-Lambdas/search_photo_lambda/lambda_function.py ./package/
+      - cd PhotoAlbum-Lambdas/search_photo_lambda/package && zip -r ../search-photos.zip .
 artifacts:
   files:
-    - search_photo_lambda/search-photos.zip
+    - search-photos.zip
