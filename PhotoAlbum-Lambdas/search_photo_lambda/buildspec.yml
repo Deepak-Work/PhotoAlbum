@@ -1,0 +1,14 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - pip install -r search_photo_lambda/requirements.txt -t ./package
+  build:
+    commands:
+      - cp search_photo_lambda/lambda_function.py ./package/
+      - cd search_photo_lambda/package && zip -r ../search-photos.zip .
+artifacts:
+  files:
+    - search_photo_lambda/search-photos.zip

@@ -1,0 +1,14 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - pip install -r index_photo_lambda/requirements.txt -t ./package
+  build:
+    commands:
+      - cp index_photo_lambda/lambda_function.py ./package/
+      - cd index_photo_lambda/package && zip -r ../index-photo.zip .
+artifacts:
+  files:
+    - index_photo_lambda/index-photo.zip

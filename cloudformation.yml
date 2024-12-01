@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for photo album application
+
+Resources:
+  PhotoStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: dc-photo-storage-bucket
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: dc-frontend-bucket
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  IndexPhotosFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: index-photos-lambda
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              print("Indexing photos")
+              return {"statusCode": 200}
+      Runtime: python3.8
+
+  SearchPhotosFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: search-photos-lambda
+      Handler: search.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              print("Searching photos")
+              return {"statusCode": 200}
+      Runtime: python3.8
+
+  PhotoApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: PhotoAlbumAPI
+
+  # API Gateway Resource and Methods for /photos and /search
+  PhotosResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt PhotoApi.RootResourceId
+      PathPart: photos
+      RestApiId: !Ref PhotoApi
+
+  PhotosPutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      ResourceId: !Ref PhotosResource
+      RestApiId: !Ref PhotoApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/${PhotoStorageBucket}
+
+  SearchResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt PhotoApi.RootResourceId
+      PathPart: search
+      RestApiId: !Ref PhotoApi
+
+  SearchGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      ResourceId: !Ref SearchResource
+      RestApiId: !Ref PhotoApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchPhotosFunction.Arn}/invocations
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+      Policies:
+        - PolicyName: LambdaS3AccessPolicy 
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow 
+                Action:
+                  - s3:GetObject 
+                  - s3:GetObjectAcl 
+                  - s3:GetObjectVersion 
+                  - s3:GetObjectVersionAcl 
+                  - s3:GetBucketLocation 
+                Resource:
+                  - arn:${AWS::Partition}:s3:::dc-photo-storage-bucket/*
+                  - arn:${AWS::Partition}:s3:::dc-photo-storage-bucket
+
+Outputs:
+
+  FrontendBucketURL:
+    Description : "URL of the frontend S3 bucket"
+    Value : !GetAtt FrontendBucket.WebsiteURL
