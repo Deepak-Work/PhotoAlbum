@@ -254,6 +254,28 @@ Resources:
     Properties:
       Name: PhotoAlbumAPI
 
+    ApiGatewayToS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ApiGatewayS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::dc-photo-storage-bucket/*
+
+  
   # API Gateway Resource and Methods for /photos and /search
   PhotosResource:
     Type: AWS::ApiGateway::Resource
@@ -270,9 +292,11 @@ Resources:
       ResourceId: !Ref PhotosResource
       RestApiId: !Ref PhotoApi
       Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/${PhotoStorageBucket}
+        IntegrationHttpMethod: PUT
+        Type: AWS
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/${PhotoStorageBucket}/{object}
+        Credentials: !GetAtt ApiGatewayToS3Role.Arn
+
 
   SearchResource:
     Type: AWS::ApiGateway::Resource

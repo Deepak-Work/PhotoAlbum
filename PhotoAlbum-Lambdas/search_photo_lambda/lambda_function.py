@@ -41,45 +41,45 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': json.dumps('Processed as part of CodePipeline')
         }
-    
-    query = event['queryStringParameters']['q']
-    
-    # Disambiguate query using Lex
-    lex_response = lex.recognize_text(
-        botId = LEX_BOT_ID,
-        botAliasId = LEX_ALIAS_ID,
-        localeId='en_US',
-        sessionId='test-session',
-        text=query
-    )
-    
-    # Extract keywords from Lex response
-    keywords = []
-    if 'interpretations' in lex_response:
-        for interpretation in lex_response['interpretations']:
-            if 'intent' in interpretation:
-                for slot in interpretation['intent']['slots'].values():
-                    if slot and 'value' in slot:
-                        keywords.append(slot['value']['interpretedValue'])
-    
-    # If keywords found, search OpenSearch
-    if keywords:
-        search_query = {
-            "query": {
-                "multi_match": {
-                    "query": " ".join(keywords),
-                    "fields": ["labels"]
+    else:
+        query = event['queryStringParameters']['q']
+        
+        # Disambiguate query using Lex
+        lex_response = lex.recognize_text(
+            botId = LEX_BOT_ID,
+            botAliasId = LEX_ALIAS_ID,
+            localeId='en_US',
+            sessionId='test-session',
+            text=query
+        )
+        
+        # Extract keywords from Lex response
+        keywords = []
+        if 'interpretations' in lex_response:
+            for interpretation in lex_response['interpretations']:
+                if 'intent' in interpretation:
+                    for slot in interpretation['intent']['slots'].values():
+                        if slot and 'value' in slot:
+                            keywords.append(slot['value']['interpretedValue'])
+        
+        # If keywords found, search OpenSearch
+        if keywords:
+            search_query = {
+                "query": {
+                    "multi_match": {
+                        "query": " ".join(keywords),
+                        "fields": ["labels"]
+                    }
                 }
             }
-        }
-        search_results = os_client.search(index="photos", body=search_query)
-        return {
-            'statusCode': 200,
-            'body': json.dumps(search_results['hits']['hits'])
-        }
-    else:
-        # Return empty array if no keywords found
-        return {
-            'statusCode': 200,
-            'body': json.dumps([])
-        }
+            search_results = os_client.search(index="photos", body=search_query)
+            return {
+                'statusCode': 200,
+                'body': json.dumps(search_results['hits']['hits'])
+            }
+        else:
+            # Return empty array if no keywords found
+            return {
+                'statusCode': 200,
+                'body': json.dumps([])
+            }
