@@ -291,7 +291,7 @@ Resources:
       Integration:
         IntegrationHttpMethod: POST
         Type: AWS_PROXY
-        Uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchPhotosFunction.Arn}/invocations
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchPhotosFunction.Arn}/invocations
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -318,8 +318,8 @@ Resources:
                   - s3:GetObjectVersionAcl 
                   - s3:GetBucketLocation 
                 Resource:
-                  - arn:${AWS::Partition}:s3:::dc-photo-storage-bucket/*
-                  - arn:${AWS::Partition}:s3:::dc-photo-storage-bucket
+                  - arn:aws:s3:::dc-photo-storage-bucket/*
+                  - arn:aws:s3:::dc-photo-storage-bucket
 
 Outputs:
 
