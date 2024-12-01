@@ -11,4 +11,4 @@ phases:
       - cd PhotoAlbum-Lambdas/index_photo_lambda/package && zip -r ../index-photo.zip .
 artifacts:
   files:
-    - index-photo.zip
+    - PhotoAlbum-Lambdas/index_photo_lambda/index-photo.zip

@@ -11,4 +11,4 @@ phases:
       - cd PhotoAlbum-Lambdas/search_photo_lambda/package && zip -r ../search-photos.zip .
 artifacts:
   files:
-    - search-photos.zip
+    - PhotoAlbum-Lambdas/search_photo_lambda/search-photos.zip
