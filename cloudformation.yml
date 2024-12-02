@@ -14,6 +14,16 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+  
+  CodePipelineArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: dc-codepipeline-artifact-bucket
 
   IndexPhotosFunction:
     Type: AWS::Lambda::Function
@@ -249,32 +259,31 @@ Resources:
                   }
       Runtime: python3.8
 
+  ApiGatewayToS3Role:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: apigateway.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: ApiGatewayS3Access
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:PutObject
+                  Resource:
+                    - !Sub arn:aws:s3:::dc-photo-storage-bucket/*
+  
   PhotoApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: PhotoAlbumAPI
-
-    ApiGatewayToS3Role:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: ApiGatewayS3Access
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource:
-                  - !Sub arn:aws:s3:::dc-photo-storage-bucket/*
-
   
   # API Gateway Resource and Methods for /photos and /search
   PhotosResource:
@@ -344,6 +353,75 @@ Resources:
                 Resource:
                   - arn:aws:s3:::dc-photo-storage-bucket/*
                   - arn:aws:s3:::dc-photo-storage-bucket
+
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelineAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'codestar-connections:UseConnection'
+                  - 'codestar-connections:GetConnection'
+                  - 'codestar-connections:ListConnections'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 's3:*'
+                  - 'codecommit:*'
+                  - 'cloudformation:*'
+                  - 'iam:PassRole'
+                  - 'lambda:*'
+                  - 'apigateway:*'
+                Resource: '*'
+
+
+  MyPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt PipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref CodePipelineArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection  # or GitHub, etc.
+                Version: '1'
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                FullRepositoryId: Deepak-Work/PhotoAlbum-Webapp
+                BranchName: main
+                ConnectionArn: arn:aws:codeconnections:us-east-1:863518439994:connection/66fe7cd0-6e4e-403c-b506-6e2476bb6c38
+                OutputArtifactFormat: CODE_ZIP 
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                BucketName: dc-frontend-bucket
+                Extract: true
 
 Outputs:
 

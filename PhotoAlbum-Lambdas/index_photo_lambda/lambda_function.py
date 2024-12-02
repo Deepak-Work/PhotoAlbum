@@ -3,6 +3,7 @@ import logging
 from botocore.exceptions import ClientError
 import json
 import base64
+from elasticsearch import Elasticsearch
 from opensearchpy import OpenSearch, RequestsHttpConnection
 import os
 
@@ -36,6 +37,7 @@ os_client = OpenSearch(
 
 
 def lambda_handler(event, context):
+    print(event)
 
     if 'CodePipeline.job' in event:
         job_id = event['CodePipeline.job']['id']
@@ -94,7 +96,12 @@ def lambda_handler(event, context):
             print(response)
             lambda_response = {
                 "statusCode": statusCode if statusCode else 200,
-                "body": json.dumps(response)
+                "body": json.dumps(response),
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS, PUT',
+                    'Access-Control-Allow-Headers': 'Content-Type, x-amz-meta-customLabels',
+                }
             }
             print("Labels found:")
             print(labels)

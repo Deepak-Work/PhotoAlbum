@@ -41,6 +41,7 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': json.dumps('Processed as part of CodePipeline')
         }
+    
     else:
         query = event['queryStringParameters']['q']
         
@@ -52,6 +53,8 @@ def lambda_handler(event, context):
             sessionId='test-session',
             text=query
         )
+
+        # lex_response = event
         
         # Extract keywords from Lex response
         keywords = []
@@ -75,11 +78,17 @@ def lambda_handler(event, context):
             search_results = os_client.search(index="photos", body=search_query)
             return {
                 'statusCode': 200,
-                'body': json.dumps(search_results['hits']['hits'])
+                'body': json.dumps(search_results['hits']['hits']), 
+                'headers': {
+            'Access-Control-Allow-Origin': '*'
+                 }  
             }
         else:
             # Return empty array if no keywords found
             return {
                 'statusCode': 200,
-                'body': json.dumps([])
+                'body': json.dumps([]), 
+                'headers': {
+            'Access-Control-Allow-Origin': '*'
+                 }  
             }
